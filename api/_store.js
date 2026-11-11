@@ -1,0 +1,137 @@
+
+const find = (re) => {
+  const k = Object.keys(process.env).find((n) => re.test(n));
+  return k ? process.env[k] : undefined;
+};
+
+const URL_ = (find(/REST(_API)?_URL$/) || '').replace(/\/+$/, '');
+const TOKEN = find(/REST(_API)?_TOKEN$/);
+
+const KEY = 'schedule-replacements';
+const NOTICE_KEY = 'site-notice';
+
+async function load() {
+  if (!URL_ || !TOKEN) {
+    throw new Error('Redis не подключён: нет переменных REST_URL и REST_TOKEN');
+  }
+
+  const r = await fetch(`${URL_}/get/${KEY}`, {
+    headers: { Authorization: `Bearer ${TOKEN}` }
+  });
+
+  if (!r.ok) {
+    throw new Error(`Redis GET завершился с HTTP ${r.status}`);
+  }
+
+  let j;
+  try {
+    j = await r.json();
+  } catch {
+    throw new Error('Redis вернул некорректный JSON при чтении замен');
+  }
+
+  try {
+    return j.result ? JSON.parse(j.result) : {};
+  } catch {
+    return {};
+  }
+}
+
+async function save(obj) {
+  if (!URL_ || !TOKEN) {
+    throw new Error('Redis не подключён: нет переменных REST_URL и REST_TOKEN');
+  }
+
+  const r = await fetch(`${URL_}/set/${KEY}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${TOKEN}`
+    },
+    body: JSON.stringify(obj)
+  });
+
+  if (!r.ok) {
+    throw new Error(`Redis SET завершился с HTTP ${r.status}`);
+  }
+}
+
+async function loadNotice() {
+  if (!URL_ || !TOKEN) {
+    throw new Error('Redis не подключён: нет переменных REST_URL и REST_TOKEN');
+  }
+
+  const r = await fetch(`${URL_}/get/${NOTICE_KEY}`, {
+    headers: { Authorization: `Bearer ${TOKEN}` }
+  });
+
+  if (!r.ok) {
+    throw new Error(`Redis GET завершился с HTTP ${r.status}`);
+  }
+
+  let j;
+  try {
+    j = await r.json();
+  } catch {
+    throw new Error('Redis вернул некорректный JSON при чтении уведомления');
+  }
+
+  try {
+    return j.result
+      ? JSON.parse(j.result)
+      : {
+          show: false,
+          title: 'Временно не работает',
+          sub: 'Ведутся технические работы. Загляните позже.'
+        };
+  } catch {
+    return {
+      show: false,
+      title: 'Временно не работает',
+      sub: 'Ведутся технические работы. Загляните позже.'
+    };
+  }
+}
+
+async function saveNotice(notice) {
+  if (!URL_ || !TOKEN) {
+    throw new Error('Redis не подключён: нет переменных REST_URL и REST_TOKEN');
+  }
+
+  const r = await fetch(`${URL_}/set/${NOTICE_KEY}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${TOKEN}`
+    },
+    body: JSON.stringify(notice)
+  });
+
+  if (!r.ok) {
+    throw new Error(`Redis SET завершился с HTTP ${r.status}`);
+  }
+}
+
+function authed(req) {
+  const p = process.env.ADMIN_PASSWORD;
+  return Boolean(p) && req.headers['x-admin-password'] === p;
+}
+
+// Разрешаем читать данные из мобильного приложения (его адрес отличается от адреса сайта).
+// Запись (POST) по-прежнему только с паролем и только с самого сайта.
+function cors(req, res) {
+  if (req.method === 'GET' || req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+  }
+  if (req.method === 'OPTIONS') { res.status(204).end(); return true; }
+  return false;
+}
+
+module.exports = {
+  load,
+  save,
+  loadNotice,
+  saveNotice,
+  authed,
+  cors
+};
