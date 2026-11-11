@@ -4,6 +4,7 @@
   "webDir": "www",
   "backgroundColor": "#10070e",
   "server": {
+    "url": "https://istuspo.vercel.app",
     "androidScheme": "https"
   },
   "android": {
