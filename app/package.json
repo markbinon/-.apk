@@ -1,0 +1,18 @@
+{
+  "name": "raspisanie-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Android-приложение (Capacitor) для сайта с расписанием",
+  "scripts": {
+    "prepare-web": "node prepare.js",
+    "sync": "node prepare.js && cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.0.0"
+  }
+}

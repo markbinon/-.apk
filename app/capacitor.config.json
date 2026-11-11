@@ -1,0 +1,12 @@
+{
+  "appId": "ru.markbinon.raspisanie",
+  "appName": "Расписание",
+  "webDir": "www",
+  "backgroundColor": "#10070e",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
