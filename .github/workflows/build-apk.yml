@@ -32,17 +32,34 @@ jobs:
           java-version: 21
 
       # Без постоянного ключа каждая сборка подписывается новым случайным ключом,
-      # и Android не ставит её поверх старой. Ключ берём из секрета DEBUG_KEYSTORE_B64.
+      # и Android не ставит её поверх старой. Ключ создаётся при первой сборке,
+      # шифруется паролем из секрета KEYSTORE_PASS и хранится в репозитории (app/signing).
       - name: Signing key
         env:
-          KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
         run: |
-          if [ -z "$KEYSTORE_B64" ]; then
-            echo "::error::Не задан секрет DEBUG_KEYSTORE_B64 (см. ANDROID.md, раздел «Обновления приложения»)"
+          if [ -z "$KEYSTORE_PASS" ]; then
+            echo "::error::Не задан секрет KEYSTORE_PASS (см. ANDROID.md, раздел «Обновления приложения»)"
             exit 1
           fi
           mkdir -p ~/.android
-          echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+          ENC=app/signing/debug.keystore.enc
+          if [ -f "$ENC" ]; then
+            openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:KEYSTORE_PASS -in "$ENC" -out ~/.android/debug.keystore \
+              || { echo "::error::Не удалось расшифровать ключ: неверный пароль в KEYSTORE_PASS"; exit 1; }
+          else
+            keytool -genkeypair -keystore ~/.android/debug.keystore -storepass android -keypass android \
+              -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 36500 \
+              -dname "CN=Android Debug,O=Android,C=US"
+            mkdir -p app/signing
+            openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -pass env:KEYSTORE_PASS -in ~/.android/debug.keystore -out "$ENC"
+            git config user.name "github-actions"
+            git config user.email "github-actions@users.noreply.github.com"
+            git add "$ENC"
+            git commit -m "Add encrypted signing key"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+          keytool -list -keystore ~/.android/debug.keystore -storepass android > /dev/null
 
       - name: Build number
         run: echo "BUILD=$((GITHUB_RUN_NUMBER + 100))" >> "$GITHUB_ENV"
