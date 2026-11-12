@@ -3324,6 +3324,10 @@ const SCHEDULE_MTOE_25_1 = {
         window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
       }
       var sec = document.getElementById('install-section'), btn = document.getElementById('install-btn'), deferred = null;
+      /* Внутри Android-приложения кнопка «Установить на телефон» не нужна: убираем её и не слушаем установку. */
+      var C = window.Capacitor;
+      var inApp = !!C && (typeof C.isNativePlatform === 'function' ? C.isNativePlatform() : true);
+      if (inApp) { if (sec) sec.remove(); return; }
       if (!sec || !btn) return;
       window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; sec.hidden = false; });
       window.addEventListener('appinstalled', function () { deferred = null; sec.hidden = true; });
