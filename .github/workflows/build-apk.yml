@@ -90,6 +90,22 @@ jobs:
         continue-on-error: true
         run: npx capacitor-assets generate --android --assetPath assets
 
+      # Тематическая иконка Android 13+: система перекрашивает силуэт под обои и тему.
+      # Берём прозрачный силуэт (foreground) как монохромный слой адаптивной иконки.
+      - name: Themed icon layer
+        working-directory: app/android/app/src/main/res
+        run: |
+          if [ ! -f mipmap-xxxhdpi/ic_launcher_foreground.png ]; then
+            echo "::warning::Адаптивная иконка не сгенерирована, тематический слой пропущен"
+            exit 0
+          fi
+          for f in mipmap-anydpi-v26/ic_launcher.xml mipmap-anydpi-v26/ic_launcher_round.xml; do
+            [ -f "$f" ] || continue
+            grep -q "<monochrome" "$f" || sed -i 's#</adaptive-icon>#    <monochrome android:drawable="@mipmap/ic_launcher_foreground"/>\n</adaptive-icon>#' "$f"
+            grep -q "<monochrome" "$f"
+            cat "$f"
+          done
+
       - name: Sync web files into Android project
         working-directory: app
         run: npx cap sync android
