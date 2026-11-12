@@ -1,12 +1,17 @@
 name: Build Android APK
 
+# Запуск вручную: Actions → Build Android APK → Run workflow.
+# Каждая сборка публикуется как GitHub Release (тег vN), приложение само находит новый релиз.
 on:
   workflow_dispatch:
-  push:
-    tags: ['v*']
+    inputs:
+      notes:
+        description: 'Что нового (покажется в окне обновления)'
+        required: false
+        default: ''
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   apk:
@@ -26,6 +31,22 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      # Без постоянного ключа каждая сборка подписывается новым случайным ключом,
+      # и Android не ставит её поверх старой. Ключ берём из секрета DEBUG_KEYSTORE_B64.
+      - name: Signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Не задан секрет DEBUG_KEYSTORE_B64 (см. ANDROID.md, раздел «Обновления приложения»)"
+            exit 1
+          fi
+          mkdir -p ~/.android
+          echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+
+      - name: Build number
+        run: echo "BUILD=$((GITHUB_RUN_NUMBER + 100))" >> "$GITHUB_ENV"
+
       - name: Prepare web files
         env:
           API_BASE_URL: ${{ vars.API_BASE_URL }}
@@ -38,6 +59,14 @@ jobs:
       - name: Add Android platform
         working-directory: app
         run: npx cap add android
+
+      # versionCode должен расти с каждой сборкой, иначе Android не обновит приложение.
+      - name: Set version
+        working-directory: app/android/app
+        run: |
+          sed -i -E "s/versionCode [0-9]+/versionCode ${BUILD}/; s/versionName \"[^\"]*\"/versionName \"1.0.${BUILD}\"/" build.gradle
+          grep -E "versionCode|versionName" build.gradle
+          grep -q "versionCode ${BUILD}" build.gradle
 
       - name: Generate icons
         working-directory: app
@@ -52,9 +81,21 @@ jobs:
         working-directory: app/android
         run: ./gradlew assembleDebug --no-daemon
 
+      - name: Name APK
+        run: cp app/android/app/build/outputs/apk/debug/app-debug.apk raspisanie.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: raspisanie-apk
-          path: app/android/app/build/outputs/apk/debug/app-debug.apk
+          path: raspisanie.apk
           if-no-files-found: error
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.BUILD }}
+          name: Расписание v${{ env.BUILD }}
+          body: ${{ inputs.notes }}
+          files: raspisanie.apk
+          make_latest: true
