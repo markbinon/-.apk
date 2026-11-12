@@ -13,6 +13,14 @@
   var cap = window.Capacitor;
   if (!cap || typeof cap.isNativePlatform !== 'function' || !cap.isNativePlatform()) return;
 
+  // Остальное поведение, нужное только в приложении (кнопка «Назад»), лежит в app-native.js.
+  (function () {
+    var s = document.createElement('script');
+    s.src = 'app-native.js';
+    s.async = true;
+    document.head.appendChild(s);
+  })();
+
   function ls(get, key, val) {
     try { return get ? localStorage.getItem(key) : localStorage.setItem(key, val); } catch (e) { return null; }
   }
