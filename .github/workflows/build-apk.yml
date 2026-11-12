@@ -101,7 +101,7 @@ jobs:
           fi
           for f in mipmap-anydpi-v26/ic_launcher.xml mipmap-anydpi-v26/ic_launcher_round.xml; do
             [ -f "$f" ] || continue
-            grep -q "<monochrome" "$f" || sed -i 's#</adaptive-icon>#    <monochrome android:drawable="@mipmap/ic_launcher_foreground"/>\n</adaptive-icon>#' "$f"
+            grep -q "<monochrome" "$f" || sed -i 's#</adaptive-icon>#    <monochrome>\n        <inset android:drawable="@mipmap/ic_launcher_foreground" android:inset="16.7%" />\n    </monochrome>\n</adaptive-icon>#' "$f"
             grep -q "<monochrome" "$f"
             cat "$f"
           done
