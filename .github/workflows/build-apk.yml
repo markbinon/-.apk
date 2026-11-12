@@ -77,6 +77,11 @@ jobs:
         working-directory: app
         run: npx cap add android
 
+      # Системная заставка Android по умолчанию показывает иконку на фоне, пока грузится сайт.
+      # Оставляем только однотонный фон: дальше сразу идёт анимация входа из самого сайта.
+      - name: Plain native splash
+        run: python3 app/patch-native-splash.py app/android/app/src/main/res/values/styles.xml
+
       # versionCode должен расти с каждой сборкой, иначе Android не обновит приложение.
       - name: Set version
         working-directory: app/android/app
@@ -125,6 +130,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish release
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.BUILD }}
