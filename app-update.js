@@ -21,6 +21,43 @@
     document.head.appendChild(s);
   })();
 
+  // Переезд на русский хостинг. Старые версии приложения открывают сайт с Vercel (другой адрес):
+  // там вместо обычной проверки показываем кнопку на весь экран, которая скачивает новое приложение.
+  // Новое приложение открывает NEW_HOST, поэтому его этот экран не затрагивает.
+  var NEW_HOST = 'istuedu.layero.app';
+  var APK_URL = 'https://github.com/markbinon/-.apk/releases/latest/download/raspisanie.apk';
+
+  function showMigration() {
+    if (document.getElementById('appMigrate')) return;
+    var style = document.createElement('style');
+    style.textContent =
+      '#appMigrate{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+      'gap:1rem;width:100%;height:100%;margin:0;padding:2rem;border:0;border-radius:0;text-align:center;cursor:pointer;font:inherit;color:#fff;' +
+      'background:linear-gradient(135deg,#db2777,#e11d48)}' +
+      '#appMigrate .t{font-size:2rem;font-weight:800;line-height:1.15}' +
+      '#appMigrate .s{font-size:1rem;opacity:.9;max-width:22rem}' +
+      '#appMigrate .h{font-size:.85rem;opacity:.75;max-width:22rem}';
+    document.head.appendChild(style);
+    var b = document.createElement('button');
+    b.id = 'appMigrate';
+    b.type = 'button';
+    b.innerHTML =
+      '<span class="t">Обновить приложение</span>' +
+      '<span class="s">Вышла новая версия, старая скоро перестанет работать. Нажмите в любом месте экрана, чтобы скачать.</span>' +
+      '<span class="h">Откройте скачанный файл из уведомления и подтвердите установку.</span>';
+    b.onclick = function () {
+      // Ссылка на другой домен открывается в системном браузере, он и скачает файл.
+      window.location.href = APK_URL;
+    };
+    (document.body || document.documentElement).appendChild(b);
+  }
+
+  if (location.hostname !== NEW_HOST) {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', showMigration);
+    else showMigration();
+    return;
+  }
+
   function ls(get, key, val) {
     try { return get ? localStorage.getItem(key) : localStorage.setItem(key, val); } catch (e) { return null; }
   }
