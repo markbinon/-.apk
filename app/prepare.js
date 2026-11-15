@@ -14,7 +14,8 @@ for (const file of ['index.html', 'manifest.webmanifest']) {
 }
 fs.cpSync(path.join(root, 'icons'), path.join(www, 'icons'), { recursive: true });
 
-const base = (process.env.API_BASE_URL || '').trim().replace(/\/+$/, '');
+// По умолчанию API на русском хостинге (тот же адрес, что и server.url в capacitor.config.json).
+const base = (process.env.API_BASE_URL || 'https://istuedu.layero.app').trim().replace(/\/+$/, '');
 if (!base) {
   console.warn('⚠ API_BASE_URL не задан: расписание будет работать, но замены и уведомления в приложении не загрузятся.');
 } else if (!/^https:\/\//.test(base)) {

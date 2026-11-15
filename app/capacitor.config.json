@@ -4,7 +4,7 @@
   "webDir": "www",
   "backgroundColor": "#10070e",
   "server": {
-    "url": "https://istuspo.vercel.app",
+    "url": "https://istuedu.layero.app",
     "androidScheme": "https"
   },
   "android": {
